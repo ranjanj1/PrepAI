@@ -1,21 +1,21 @@
-# PrepAI — AI-Powered Interview Intelligence
+# PrepAI — AI-Powered Interview Prep
 
-Paste any job posting URL. Get a personalized interview prep kit in seconds.
+Paste a job URL or raw job description → get a personalized interview prep kit in seconds.
 
-PrepAI scrapes the job description, extracts skills and topics, and generates tailored Technical, System Design, and Behavioral questions — all specific to the exact role and company.
-
-![PrepAI Demo](docs/UI.png)
+PrepAI analyzes the role, extracts skills and topics, and generates tailored Technical, System Design, and Behavioral questions — specific to the exact role and company. Ask AI for ideal answers, add your own questions, and track your application status.
 
 ---
 
 ## Features
 
-- **URL → Prep Kit**: Paste any job board URL (LinkedIn, Greenhouse, Lever, Workday, etc.)
-- **Live Streaming**: Watch the AI agent work step-by-step in real time via WebSocket
-- **Role Intelligence**: Extracts job title, company, key skills (core vs. preferred), and topic weights
-- **Categorized Questions**: Technical, System Design, and Behavioral tabs with expandable hints
-- **Difficulty Badges**: Each question rated Easy / Medium / Hard
-- **Auth + History**: Register, log in, and revisit any past prep kit
+- **URL or Paste JD** — paste any job board URL (LinkedIn, Greenhouse, Lever, Workday, etc.) or paste the raw job description text directly
+- **Live Streaming** — watch the AI agent work step-by-step in real time via WebSocket
+- **Role Intelligence** — extracts job title, company, key skills (core vs. preferred), and topic weights
+- **Categorized Questions** — Technical, System Design, and Behavioral tabs with difficulty badges and expandable hints
+- **AI Answers** — click "Get AI Answer" on any question to get a coached ideal answer, saved for future sessions
+- **Custom Questions** — add your own questions to any tab, with difficulty, topic, and hint
+- **Application Tracking** — track status per job (Not Applied → Applied → Interview → Offer → Rejected) with a filter bar in history
+- **Auth + History** — register, log in, and revisit any past prep kit
 
 ---
 
@@ -23,11 +23,10 @@ PrepAI scrapes the job description, extracts skills and topics, and generates ta
 
 | Layer | Technology |
 |---|---|
-| Backend | Python · FastAPI · SQLite (SQLAlchemy async) |
-| AI Orchestration | Claude Agent SDK (`ClaudeSDKClient`) · `claude-sonnet-4-6` |
-| Subagents | Analyzer (haiku) · 3× Question Generators (sonnet/haiku) |
+| Backend | Python 3.10+ · FastAPI · SQLite (SQLAlchemy async + aiosqlite) |
+| AI Orchestration | Claude Agent SDK · Anthropic API |
 | Scraping | httpx + BeautifulSoup · Playwright fallback |
-| Auth | JWT (python-jose) · bcrypt (passlib) |
+| Auth | JWT (python-jose) · bcrypt |
 | Frontend | React 18 · TypeScript · Vite · Tailwind CSS |
 | Realtime | FastAPI WebSocket |
 
@@ -38,21 +37,24 @@ PrepAI scrapes the job description, extracts skills and topics, and generates ta
 ```
 PrepAI/
 ├── backend/
-│   ├── main.py        # FastAPI app, WebSocket, history endpoints
-│   ├── agent.py       # ClaudeSDKClient orchestration + subagents
-│   ├── auth.py        # JWT auth, /auth/register, /auth/login
-│   ├── database.py    # SQLAlchemy models (User, Analysis)
-│   ├── scraper.py     # URL → clean text (httpx + playwright fallback)
-│   └── schemas.py     # Pydantic models + JSON schema
+│   ├── main.py        # FastAPI app — all endpoints + WebSocket handler
+│   ├── agent.py       # Claude Agent SDK orchestration + Anthropic answer generation
+│   ├── auth.py        # JWT auth — /auth/register, /auth/login
+│   ├── database.py    # SQLAlchemy models (User, Analysis, Answer, CustomQuestion)
+│   ├── scraper.py     # URL → clean text (httpx + Playwright fallback)
+│   └── schemas.py     # JSON schema for structured agent output
 ├── frontend/
 │   └── src/
-│       ├── App.tsx                    # Screen state machine
-│       ├── hooks/useAnalysis.ts       # WebSocket client hook
-│       ├── screens/                   # Auth, Home, Results, History
-│       └── components/                # Sidebar, QuestionCard, ScanProgress
-├── docs/              # Project spec + UI prototype
+│       ├── App.tsx                  # Screen routing + state
+│       ├── api.ts                   # All API calls
+│       ├── types.ts                 # Shared TypeScript types
+│       ├── hooks/useAnalysis.ts     # WebSocket client hook
+│       ├── screens/                 # Auth, Home, Results, History
+│       └── components/              # QuestionCard, ScanProgress, Sidebar
+├── docs/
 ├── .env.example
-└── requirements.txt
+├── requirements.txt
+└── CLAUDE.md          # Developer reference
 ```
 
 ---
@@ -60,30 +62,33 @@ PrepAI/
 ## Setup
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 18+ (or Bun)
+
+- Python 3.10+
+- Node.js 18+
 - An [Anthropic API key](https://console.anthropic.com)
 
-### Backend
+### 1. Clone & configure
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/your-username/PrepAI.git
+cd PrepAI
+cp .env.example .env
+# Edit .env — set ANTHROPIC_API_KEY and JWT_SECRET
+```
+
+### 2. Backend
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 playwright install chromium
 
-# 2. Configure environment
-cp .env.example .env
-# Edit .env — set ANTHROPIC_API_KEY and JWT_SECRET
-
-# 3. Start the server
-#uvicorn backend.main:app --reload --port 8000
-
-#/Users/jai79509/Documents/profile/personalProjects/.venv/bin/uvicorn backend.main:app --reload --port 8000
-
-  cd PrepAI && uvicorn backend.main:app --reload   
+uvicorn backend.main:app --reload
+# → http://localhost:8000
 ```
 
-### Frontend
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -94,57 +99,49 @@ npm run dev
 
 The Vite dev server proxies `/auth`, `/analyses`, and `/ws` to the FastAPI backend automatically.
 
-### Production Build
+### Production build
 
 ```bash
 cd frontend && npm run build
-# FastAPI serves frontend/dist/ as static files at http://localhost:8000
+# FastAPI serves frontend/dist/ as static files
 uvicorn backend.main:app --port 8000
-```
-
----
-
-## How It Works
-
-```
-User pastes URL
-    │
-    ▼
-WebSocket /ws/analyze
-    │
-    ├─ scrape_job MCP tool → httpx/playwright → raw job text
-    │       ↓ progress: "Fetching job posting..."
-    ├─ analyzer subagent (haiku) → role, company, skills[], topics[]
-    │       ↓ progress: "Extracting skills and topics..."
-    ├─ tech_questions subagent (sonnet) → 4 Technical questions
-    │       ↓ progress: "Generating Technical questions..."
-    ├─ sysdesign_questions subagent (sonnet) → 2 System Design questions
-    │       ↓ progress: "Generating System Design questions..."
-    └─ behavioral_questions subagent (haiku) → 2 Behavioral questions
-            ↓ progress: "Generating Behavioral questions..."
-            ↓ result: full AnalysisResult JSON → saved to DB
 ```
 
 ---
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key |
-| `JWT_SECRET` | Secret key for signing JWT tokens (use a long random string) |
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | ✅ | Your Anthropic API key |
+| `JWT_SECRET` | ✅ | Secret for signing JWT tokens (use a long random string) |
+| `LEAD_MODEL` | optional | Lead agent model (default: `claude-haiku-4-5`) |
+| `SUBAGENT_MODEL` | optional | Subagent model short name (default: `haiku`) |
+| `ANSWER_MODEL` | optional | Model for answer generation (default: same as `LEAD_MODEL`) |
 
 ---
 
-## Agent Architecture
+## How It Works
 
-The backend uses `ClaudeSDKClient` from the Claude Agent SDK to orchestrate a multi-agent pipeline:
+```
+User pastes URL or JD text
+        │
+        ▼
+WebSocket /ws/analyze
+        │
+        ├─ [URL mode] scrape_job MCP tool → httpx/Playwright → raw job text
+        │       ↓ "Fetching job posting..."
+        ├─ analyzer subagent → role, company, skills[], topics[]
+        │       ↓ "Extracting skills & topics..."
+        ├─ tech_questions subagent → 4 Technical questions
+        │       ↓ "Generating Technical questions..."
+        ├─ sysdesign_questions subagent → 2 System Design questions
+        │       ↓ "Generating System Design questions..."
+        └─ behavioral_questions subagent → 2 Behavioral questions
+                ↓ result saved to DB → streamed to client
+```
 
-- **Lead agent** (`claude-sonnet-4-6`): Coordinates the full pipeline via a custom MCP scraper tool and spawns subagents via the `Task` tool
-- **Analyzer** (`claude-haiku-4-5`): Extracts structured role metadata from raw job text
-- **tech_questions** (`claude-sonnet-4-6`): Generates 4 technical questions mapped to specific stack mentions
-- **sysdesign_questions** (`claude-sonnet-4-6`): Generates 2 system design questions with realistic constraints
-- **behavioral_questions** (`claude-haiku-4-5`): Generates 2 behavioral questions that quote specific JD language
+JD text mode skips the scraping step and feeds the text directly to the analyzer.
 
 ---
 
