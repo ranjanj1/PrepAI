@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+websockets
+httpx
+requests
+beautifulsoup4
+playwright
+langdetect
+claude-agent-sdk
+anthropic
+python-jose[cryptography]
+bcrypt
+sqlalchemy
+aiosqlite
+python-dotenv
+pydantic
