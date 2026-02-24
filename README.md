@@ -4,7 +4,7 @@ Paste any job posting URL. Get a personalized interview prep kit in seconds.
 
 PrepAI scrapes the job description, extracts skills and topics, and generates tailored Technical, System Design, and Behavioral questions — all specific to the exact role and company.
 
-![PrepAI Demo](docs/sampleUI_image2.png)
+![PrepAI Demo](docs/UI.png)
 
 ---
 
