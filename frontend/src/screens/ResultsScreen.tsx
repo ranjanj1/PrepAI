@@ -60,58 +60,93 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
     result.questions.sysdesign.length +
     result.questions.behavioral.length
 
-  const displayUrl = url.length > 50 ? url.slice(0, 50) + '...' : url
+  const displayUrl = url.length > 55 ? url.slice(0, 55) + '…' : url
+
+  const tabCounts: Record<Tab, number> = {
+    technical: result.questions.technical.length + customQuestions.filter(q => q.category === 'technical').length,
+    sysdesign: result.questions.sysdesign.length + customQuestions.filter(q => q.category === 'sysdesign').length,
+    behavioral: result.questions.behavioral.length + customQuestions.filter(q => q.category === 'behavioral').length,
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Topbar */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-border bg-bg sticky top-0 z-50">
-        <div className="flex items-center gap-2 text-[15px] font-bold">
-          <div className="w-2 h-2 bg-accent rounded-full" />
-          PrepAI
+    <div className="flex flex-col min-h-screen bg-bg">
+      {/* Top bar */}
+      <header className="flex items-center justify-between px-8 py-3.5 border-b border-border bg-surface sticky top-0 z-50"
+              style={{ boxShadow: '0 1px 8px rgba(26,22,18,0.05)' }}>
+        <div className="flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-accent"
+                style={{ boxShadow: '0 0 0 3px rgba(255,92,53,0.2)' }} />
+          <span className="font-display text-[17px] font-bold text-text">
+            Prep<span className="text-accent">AI</span>
+          </span>
         </div>
-        <div className="bg-surface border border-border rounded-full px-3.5 py-1.5 font-mono text-[11px] text-muted max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
+
+        <div className="font-mono text-[11px] text-muted bg-surface2 border border-border rounded-full px-4 py-1.5 max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap hidden md:block">
           {displayUrl}
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex gap-2">
           <button
             onClick={onHistory}
-            className="border border-border rounded-lg px-3.5 py-2 text-muted font-semibold text-[12px] hover:text-text hover:border-text transition-colors"
+            className="text-[12px] font-semibold text-muted border border-border rounded-xl px-4 py-2 hover:bg-surface2 hover:text-text transition-all"
           >
-            History
+            📋 History
           </button>
           <button
             onClick={onNew}
-            className="border border-border rounded-lg px-3.5 py-2 text-muted font-semibold text-[12px] hover:text-text hover:border-text transition-colors"
+            className="text-[12px] font-semibold text-muted border border-border rounded-xl px-4 py-2 hover:bg-surface2 hover:text-text transition-all"
           >
-            ← New Job
+            ← New
           </button>
         </div>
       </header>
 
-      {/* Dashboard */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
         <Sidebar data={result} />
 
-        {/* Main panel */}
-        <main className="flex-1 p-8 flex flex-col gap-6 overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-[22px] font-extrabold tracking-tight">Interview Questions</h2>
-            <span className="font-mono text-[12px] text-muted">{total} questions generated</span>
+        {/* Main content */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3.5 mb-7">
+            <div className="bg-surface border-2 border-border rounded-2xl p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5"
+                 style={{ boxShadow: '0 2px 16px rgba(26,22,18,0.06)' }}>
+              <p className="font-display text-[34px] font-bold text-accent leading-none mb-1">{total}</p>
+              <p className="text-[12px] text-muted font-medium">Total Questions</p>
+            </div>
+            <div className="bg-surface border-2 border-border rounded-2xl p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5">
+              <p className="font-display text-[34px] font-bold text-text leading-none mb-1">
+                {result.questions.technical.length}
+              </p>
+              <p className="text-[12px] text-muted font-medium">Technical</p>
+            </div>
+            <div className="bg-surface border-2 border-border rounded-2xl p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5">
+              <p className="font-display text-[34px] font-bold text-text leading-none mb-1">
+                {result.questions.behavioral.length}
+              </p>
+              <p className="text-[12px] text-muted font-medium">Behavioral</p>
+            </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-surface border border-border rounded-xl p-1 w-fit">
+          <div className="flex gap-1.5 mb-7 bg-surface border border-border rounded-xl p-1.5 w-fit">
             {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
               <button
                 key={t}
-                onClick={() => { setTab(t); setShowForm(false) }}
-                className={`px-4 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all ${
-                  tab === t ? 'bg-accent text-bg' : 'text-muted hover:text-text'
+                onClick={() => setTab(t)}
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                  tab === t
+                    ? 'bg-accent text-white'
+                    : 'text-muted hover:text-text hover:bg-surface2'
                 }`}
+                style={tab === t ? { boxShadow: '0 3px 12px rgba(255,92,53,0.3)' } : undefined}
               >
                 {TAB_LABELS[t]}
+                <span className={`font-mono text-[11px] rounded-full px-1.5 py-0 ${
+                  tab === t ? 'bg-white/25 text-white' : 'bg-surface2 text-muted'
+                }`}>
+                  {tabCounts[t]}
+                </span>
               </button>
             ))}
           </div>
@@ -147,7 +182,7 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
           {showForm ? (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="border border-dashed border-accent/40 rounded-2xl p-5 flex flex-col gap-3 bg-surface"
+              className="mt-3 border-2 border-dashed border-accent/40 rounded-2xl p-5 flex flex-col gap-3 bg-surface animate-slide-in"
             >
               <textarea
                 autoFocus
@@ -155,13 +190,13 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
                 value={form.text}
                 onChange={(e) => setForm((p) => ({ ...p, text: e.target.value }))}
                 rows={3}
-                className="w-full bg-transparent border border-border rounded-xl px-4 py-3 font-mono text-[13px] text-text placeholder-muted outline-none resize-none focus:border-accent"
+                className="w-full bg-surface2 border border-border rounded-xl px-4 py-3 text-[13px] text-text placeholder-muted outline-none resize-none focus:border-accent focus:bg-white transition-all"
               />
               <div className="flex gap-3">
                 <select
                   value={form.difficulty}
                   onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value }))}
-                  className="bg-bg border border-border rounded-lg px-3 py-2 font-mono text-[12px] text-text outline-none focus:border-accent"
+                  className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text outline-none focus:border-accent transition-all"
                 >
                   <option>Easy</option>
                   <option>Medium</option>
@@ -171,26 +206,26 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
                   placeholder="Topic (optional)"
                   value={form.topic}
                   onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
-                  className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent"
+                  className="flex-1 bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
                 />
               </div>
               <input
                 placeholder="Hint (optional)"
                 value={form.hint}
                 onChange={(e) => setForm((p) => ({ ...p, hint: e.target.value }))}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent"
+                className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
               />
               <div className="flex gap-2 justify-end">
                 <button
-                  onClick={() => { setShowForm(false); setForm({ text: '', difficulty: 'Medium', topic: '', hint: '' }) }}
-                  className="font-mono text-[12px] text-muted hover:text-text px-4 py-2 transition-colors"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 rounded-xl font-mono text-[12px] text-muted border border-border hover:bg-surface2 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddQuestion}
-                  disabled={!form.text.trim()}
-                  className="bg-accent text-bg rounded-lg px-4 py-2 font-mono text-[12px] font-semibold disabled:opacity-40 hover:opacity-85 transition-opacity"
+                  className="px-5 py-2 rounded-xl bg-accent text-white font-mono text-[12px] font-semibold transition-all hover:-translate-y-0.5"
+                  style={{ boxShadow: '0 3px 10px rgba(255,92,53,0.3)' }}
                 >
                   Add Question
                 </button>
@@ -199,14 +234,15 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
           ) : (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full py-2.5 rounded-xl border border-dashed border-border text-muted font-mono text-[12px] hover:border-accent/40 hover:text-accent transition-all"
+              className="mt-3 w-full flex items-center gap-3 border-2 border-dashed border-border rounded-2xl px-6 py-4 text-[14px] font-semibold text-muted hover:border-accent hover:text-accent hover:bg-accent/[0.03] transition-all"
             >
-              + Add your own question
+              <span className="w-7 h-7 bg-surface2 rounded-lg flex items-center justify-center text-lg leading-none border border-border">+</span>
+              Add a custom question
             </button>
           )}
 
-          <p className="font-mono text-[11px] text-muted text-center pt-3 border-t border-border">
-            Click any card to reveal hints
+          <p className="font-mono text-[11px] text-muted text-center mt-8 pt-5 border-t border-border">
+            Click any card to reveal hints · Questions tailored to this role
           </p>
         </main>
       </div>

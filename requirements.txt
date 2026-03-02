@@ -14,3 +14,4 @@ sqlalchemy
 aiosqlite
 python-dotenv
 pydantic
+python-jose

@@ -20,8 +20,8 @@ const STATUSES: { value: JobStatus; label: string }[] = [
 const STATUS_STYLE: Record<JobStatus, string> = {
   not_applied: 'text-muted border-border',
   applied:     'text-accent border-accent/40 bg-accent/10',
-  interview:   'text-yellow-400 border-yellow-400/40 bg-yellow-400/10',
-  offer:       'text-blue-400 border-blue-400/40 bg-blue-400/10',
+  interview:   'text-[#d4621a] border-[#f4a261]/40 bg-[#f4a261]/10',
+  offer:       'text-blue-500 border-blue-400/40 bg-blue-400/10',
   rejected:    'text-warn border-warn/40 bg-warn/10',
 }
 
@@ -69,64 +69,71 @@ export function HistoryScreen({ onBack, onLoad }: Props) {
   const counts = analyses.reduce((acc, a) => {
     acc[a.status] = (acc[a.status] ?? 0) + 1
     return acc
-  }, {} as Record<JobStatus, number>)
+  }, {} as Record<string, number>)
 
   return (
-    <div className="min-h-screen flex flex-col" onClick={() => setOpenPickerId(null)}>
-      {/* Topbar */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-border bg-bg sticky top-0 z-50">
-        <div className="flex items-center gap-2 text-[15px] font-bold">
-          <div className="w-2 h-2 bg-accent rounded-full" />
-          PrepAI
+    <div className="min-h-screen bg-bg flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-4 border-b border-border bg-surface sticky top-0 z-50"
+              style={{ boxShadow: '0 1px 8px rgba(26,22,18,0.05)' }}>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="text-muted hover:text-text transition-colors font-mono text-[12px]"
+          >
+            ← Back
+          </button>
+          <div className="w-px h-4 bg-border" />
+          <span className="font-display text-[17px] font-bold text-text">
+            Prep<span className="text-accent">AI</span>
+          </span>
         </div>
-        <button
-          onClick={onBack}
-          className="border border-border rounded-lg px-3.5 py-2 text-muted font-semibold text-[12px] hover:text-text hover:border-text transition-colors"
-        >
-          ← Back
-        </button>
+        <h1 className="font-display text-[18px] font-bold text-text">My History</h1>
+        <div className="w-24" />
       </header>
 
-      <main className="max-w-2xl mx-auto w-full px-6 py-10">
-        <h2 className="text-[22px] font-extrabold tracking-tight mb-1">My Prep Kits</h2>
-        <p className="font-mono text-[12px] text-muted mb-6">{analyses.length} jobs tracked</p>
-
-        {/* Filter bar */}
-        <div className="flex gap-1.5 flex-wrap mb-6">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-8">
+        {/* Filter tabs */}
+        <div className="flex gap-2 flex-wrap mb-6">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-lg font-mono text-[11px] border transition-all ${
+            className={`px-4 py-2 rounded-xl text-[12px] font-semibold border transition-all ${
               filter === 'all'
-                ? 'bg-accent text-bg border-accent'
-                : 'text-muted border-border hover:border-accent/40 hover:text-text'
+                ? 'bg-accent text-white border-accent'
+                : 'bg-surface text-muted border-border hover:bg-surface2 hover:text-text'
             }`}
           >
-            All ({analyses.length})
+            All <span className="font-mono">{analyses.length}</span>
           </button>
           {STATUSES.map(({ value, label }) => (
             counts[value] ? (
               <button
                 key={value}
                 onClick={() => setFilter(value)}
-                className={`px-3 py-1 rounded-lg font-mono text-[11px] border transition-all ${
+                className={`px-4 py-2 rounded-xl text-[12px] font-semibold border transition-all ${
                   filter === value
                     ? STATUS_STYLE[value] + ' border-current'
-                    : 'text-muted border-border hover:border-accent/40 hover:text-text'
+                    : 'bg-surface text-muted border-border hover:bg-surface2 hover:text-text'
                 }`}
               >
-                {label} ({counts[value]})
+                {label} <span className="font-mono">{counts[value]}</span>
               </button>
             ) : null
           ))}
         </div>
 
-        {loading && <p className="font-mono text-[12px] text-muted">Loading...</p>}
-        {error && <p className="font-mono text-[12px] text-warn">{error}</p>}
+        {loading && (
+          <p className="font-mono text-[12px] text-muted text-center py-12">Loading...</p>
+        )}
+        {error && (
+          <p className="font-mono text-[12px] text-warn text-center py-12">{error}</p>
+        )}
 
         {!loading && filtered.length === 0 && (
-          <div className="bg-surface border border-border rounded-xl p-6 text-center">
-            <p className="font-mono text-[13px] text-muted">
-              {filter === 'all' ? 'No analyses yet. Paste a job URL to get started.' : `No jobs with status "${filter}".`}
+          <div className="text-center py-16">
+            <p className="font-display text-[22px] font-bold text-text mb-2">No analyses yet</p>
+            <p className="font-mono text-[12px] text-muted">
+              {filter === 'all' ? 'Paste a job URL to get started.' : 'No jobs with this status.'}
             </p>
           </div>
         )}
@@ -136,45 +143,46 @@ export function HistoryScreen({ onBack, onLoad }: Props) {
             <div
               key={a.id}
               onClick={() => open(a.id)}
-              className="relative bg-surface border border-border rounded-xl p-5 cursor-pointer hover:border-accent/40 transition-all group"
+              className="bg-surface border-2 border-border rounded-2xl p-5 cursor-pointer transition-all hover:border-accent/40 hover:-translate-y-0.5"
+              style={{ boxShadow: '0 2px 12px rgba(26,22,18,0.06)' }}
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold group-hover:text-accent transition-colors truncate">
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-[16px] text-text leading-snug">
                     {a.role || 'Unknown Role'}
                   </p>
-                  <p className="font-mono text-[11px] text-accent mt-0.5">{a.company}</p>
-                  <p className="font-mono text-[10px] text-muted mt-1.5 truncate max-w-xs">{a.job_url}</p>
+                  <p className="font-mono text-[11px] text-accent mt-0.5 font-medium">
+                    {a.company || '—'}
+                  </p>
+                  <p className="font-mono text-[10px] text-muted mt-2 truncate">
+                    {a.job_url}
+                  </p>
                 </div>
 
-                <div className="shrink-0 flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-2 shrink-0">
                   <p className="font-mono text-[10px] text-muted">
-                    {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(a.created_at).toLocaleDateString()}
                   </p>
 
-                  {/* Status badge — click to open picker */}
                   <div className="relative">
                     <button
                       onClick={(e) => togglePicker(e, a.id)}
-                      className={`font-mono text-[10px] px-2.5 py-1 rounded border uppercase tracking-wide transition-all hover:opacity-80 ${STATUS_STYLE[a.status]}`}
+                      className={`font-mono text-[10px] px-3 py-1 rounded-lg border transition-all ${STATUS_STYLE[a.status]}`}
                     >
-                      {STATUSES.find((s) => s.value === a.status)?.label ?? a.status}
+                      {STATUSES.find(s => s.value === a.status)?.label ?? a.status} ▾
                     </button>
 
-                    {/* Inline picker */}
                     {openPickerId === a.id && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 top-full mt-1.5 z-20 bg-bg border border-border rounded-xl p-2 flex flex-col gap-1 shadow-lg min-w-[130px]"
-                      >
+                      <div className="absolute right-0 top-full mt-1 bg-surface border-2 border-border rounded-xl overflow-hidden z-20 min-w-[130px] animate-slide-in"
+                           style={{ boxShadow: '0 8px 24px rgba(26,22,18,0.12)' }}>
                         {STATUSES.map(({ value, label }) => (
                           <button
                             key={value}
                             onClick={(e) => handleStatusChange(e, a.id, value)}
-                            className={`text-left font-mono text-[11px] px-3 py-1.5 rounded-lg transition-colors ${
+                            className={`w-full text-left px-3 py-2 font-mono text-[11px] transition-colors hover:bg-surface2 ${
                               a.status === value
                                 ? STATUS_STYLE[value] + ' border border-current'
-                                : 'text-muted hover:text-text hover:bg-surface'
+                                : 'text-muted'
                             }`}
                           >
                             {label}

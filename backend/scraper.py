@@ -25,18 +25,47 @@ _MAX_TEXT_LENGTH = 12000
 # Domains that always need playwright — no point trying httpx first
 _JS_HEAVY_DOMAINS = ("workday.com", "myworkdayjobs.com", "icims.com")
 
+# Known job board domains — if URL doesn't look like a direct job posting, warn
+_JOB_BOARD_DOMAINS = (
+    "linkedin.com", "greenhouse.io", "lever.co", "workday.com",
+    "myworkdayjobs.com", "icims.com", "jobvite.com", "smartrecruiters.com",
+    "ashbyhq.com", "rippling.com", "indeed.com", "glassdoor.com",
+)
+
+
+def _looks_like_job_posting(url: str) -> bool:
+    """
+    Heuristic check: is this URL likely a direct job posting page?
+    Warns if it looks like a generic homepage or /careers landing page.
+    """
+    url_lower = url.lower()
+    # Generic careers pages (not a specific job)
+    suspicious_paths = ["/careers", "/jobs", "/openings", "/positions", "/work-with-us"]
+    for path in suspicious_paths:
+        if url_lower.rstrip("/").endswith(path):
+            return False
+    return True
+
 
 async def scrape_url(url: str, retries: int = 3) -> str:
     """Fetch a job posting URL and return clean text. Falls back to playwright if needed."""
+
+    if not _looks_like_job_posting(url):
+        raise ValueError(
+            f"The URL '{url}' looks like a generic careers page, not a specific job posting. "
+            "Please paste the direct link to the individual job listing."
+        )
+
     if any(d in url for d in _JS_HEAVY_DOMAINS):
         logger.info("JS-heavy domain detected, using playwright: %s", url)
         return await _playwright_scrape(url)
 
+    last_error: Exception | None = None
     for attempt in range(retries):
         try:
             logger.info("httpx attempt %d: %s", attempt + 1, url)
             async with httpx.AsyncClient(
-                headers=_HEADERS, timeout=10, follow_redirects=True
+                headers=_HEADERS, timeout=15, follow_redirects=True
             ) as client:
                 r = await client.get(url)
                 r.raise_for_status()
@@ -45,13 +74,27 @@ async def scrape_url(url: str, retries: int = 3) -> str:
                     logger.info("httpx succeeded, extracted %d chars", len(text))
                     return text[:_MAX_TEXT_LENGTH]
                 logger.warning("httpx got response but text too short (%d chars)", len(text))
+        except httpx.ConnectError as e:
+            last_error = e
+            logger.warning("httpx attempt %d failed (DNS/connection): %s", attempt + 1, e)
+            # DNS failures won't recover with retries — bail early and try playwright
+            break
         except Exception as e:
+            last_error = e
             logger.warning("httpx attempt %d failed: %s", attempt + 1, e)
             if attempt < retries - 1:
                 await asyncio.sleep(1)
 
     logger.info("Falling back to playwright: %s", url)
-    return await _playwright_scrape(url)
+    try:
+        return await _playwright_scrape(url)
+    except Exception as playwright_err:
+        # Both methods failed — raise a clear user-facing error
+        raise ValueError(
+            f"Could not fetch the job posting at '{url}'. "
+            "The page may be behind a login wall, the URL may be incorrect, or the site may be blocking scrapers. "
+            "Try pasting the job description text directly instead."
+        ) from playwright_err
 
 
 def _extract_text(html: str) -> str:

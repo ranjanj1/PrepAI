@@ -12,6 +12,7 @@ venv/
 dist/
 build/
 .env
+.prep_venv
 
 # Frontend
 frontend/node_modules/

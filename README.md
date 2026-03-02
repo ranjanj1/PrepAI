@@ -85,6 +85,7 @@ pip install -r requirements.txt
 playwright install chromium
 
 uvicorn backend.main:app --reload
+python -m uvicorn backend.main:app --reload
 # → http://localhost:8000
 ```
 
@@ -105,6 +106,7 @@ The Vite dev server proxies `/auth`, `/analyses`, and `/ws` to the FastAPI backe
 cd frontend && npm run build
 # FastAPI serves frontend/dist/ as static files
 uvicorn backend.main:app --port 8000
+python -m uvicorn backend.main:app --reload
 ```
 
 ---
