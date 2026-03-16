@@ -2,6 +2,10 @@
 
 Paste a job URL or raw job description → get a personalized interview prep kit in seconds.
 
+## Demo
+
+[![PrepAI Demo](https://img.youtube.com/vi/RRbZ9OFsyr0/maxresdefault.jpg)](https://www.youtube.com/watch?v=RRbZ9OFsyr0)
+
 PrepAI analyzes the role, extracts skills and topics, and generates tailored Technical, System Design, and Behavioral questions — specific to the exact role and company. Ask AI for ideal answers, add your own questions, and track your application status.
 
 ---
@@ -11,7 +15,8 @@ PrepAI analyzes the role, extracts skills and topics, and generates tailored Tec
 - **URL or Paste JD** — paste any job board URL (LinkedIn, Greenhouse, Lever, Workday, etc.) or paste the raw job description text directly
 - **Live Streaming** — watch the AI agent work step-by-step in real time via WebSocket
 - **Role Intelligence** — extracts job title, company, key skills (core vs. preferred), and topic weights
-- **Categorized Questions** — Technical, System Design, and Behavioral tabs with difficulty badges and expandable hints
+- **Categorized Questions** — Technical, System Design, Behavioral, and Company Overview tabs with difficulty badges and expandable hints
+- **Company Overview** — auto-generated company description, culture signals, interview priorities, and research tips — runs in parallel with question generation at no extra cost
 - **AI Answers** — click "Get AI Answer" on any question to get a coached ideal answer, saved for future sessions
 - **Custom Questions** — add your own questions to any tab, with difficulty, topic, and hint
 - **Application Tracking** — track status per job (Not Applied → Applied → Interview → Offer → Rejected) with a filter bar in history
@@ -135,11 +140,10 @@ WebSocket /ws/analyze
         │       ↓ "Fetching job posting..."
         ├─ analyzer subagent → role, company, skills[], topics[]
         │       ↓ "Extracting skills & topics..."
-        ├─ tech_questions subagent → 4 Technical questions
-        │       ↓ "Generating Technical questions..."
-        ├─ sysdesign_questions subagent → 2 System Design questions
-        │       ↓ "Generating System Design questions..."
-        └─ behavioral_questions subagent → 2 Behavioral questions
+        ├─ (parallel) tech_questions subagent → 4 Technical questions
+        ├─ (parallel) sysdesign_questions subagent → 2 System Design questions
+        ├─ (parallel) behavioral_questions subagent → 2 Behavioral questions
+        └─ (parallel) company_insights subagent → company overview
                 ↓ result saved to DB → streamed to client
 ```
 
