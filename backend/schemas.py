@@ -36,7 +36,7 @@ class AnalysisResult(BaseModel):
 
 ANALYSIS_JSON_SCHEMA = {
     "type": "object",
-    "required": ["role", "company", "location", "skills", "topics", "questions"],
+    "required": ["role", "company", "location", "skills", "topics", "questions", "company_overview"],
     "properties": {
         "role": {"type": "string"},
         "company": {"type": "string"},
@@ -61,6 +61,16 @@ ANALYSIS_JSON_SCHEMA = {
                     "name": {"type": "string"},
                     "weight": {"type": "integer", "minimum": 0, "maximum": 100},
                 },
+            },
+        },
+        "company_overview": {
+            "type": "object",
+            "required": ["description", "culture", "interview_focus", "research_tips"],
+            "properties": {
+                "description": {"type": "string"},
+                "culture": {"type": "array", "items": {"type": "string"}},
+                "interview_focus": {"type": "array", "items": {"type": "string"}},
+                "research_tips": {"type": "array", "items": {"type": "string"}},
             },
         },
         "questions": {

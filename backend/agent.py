@@ -114,6 +114,16 @@ Rules:
 
 Return ONLY a JSON array of question objects. No markdown, no explanation."""
 
+_COMPANY_INSIGHTS_PROMPT = """You are a company research analyst helping candidates prepare for interviews.
+
+Given a job description and extracted company/role info, return ONLY a JSON object with:
+- description: 2-3 sentence overview of what the company does, inferred from the JD context
+- culture: array of 3-4 strings — culture signals and values emphasized in the JD (e.g. "Fast-paced startup environment", "Heavy emphasis on ownership and autonomy")
+- interview_focus: array of 3-4 strings — what this company seems to prioritize based on the JD (e.g. "Strong system design fundamentals", "Cross-functional collaboration")
+- research_tips: array of 3-4 strings — specific things to look up before the interview (e.g. "Recent product launches or blog posts", "Engineering culture from their tech blog")
+
+Return ONLY the JSON object. No markdown, no explanation."""
+
 # ── Subagent Definitions ──────────────────────────────────────────────────────
 
 _AGENTS: dict[str, AgentDefinition] = {
@@ -139,7 +149,13 @@ _AGENTS: dict[str, AgentDefinition] = {
         description="Generates Behavioral interview questions targeting specific language from the job description",
         prompt=_BEHAVIORAL_PROMPT,
         model="haiku",
-        tools=[],  # No tools needed — text in, JSON out
+        tools=[],
+    ),
+    "company_insights": AgentDefinition(
+        description="Generates company overview: description, culture signals, interview focus, and research tips",
+        prompt=_COMPANY_INSIGHTS_PROMPT,
+        model="haiku",
+        tools=[],
     ),
 }
 
@@ -151,6 +167,7 @@ _STEP_MAP = {
     "tech_questions": ("technical", "Generating Technical questions..."),
     "sysdesign_questions": ("sysdesign", "Generating System Design questions..."),
     "behavioral_questions": ("behavioral", "Generating Behavioral questions..."),
+    "company_insights": ("company", "Researching company insights..."),
 }
 
 # ── Lead agent prompts ────────────────────────────────────────────────────────
@@ -162,14 +179,14 @@ Steps:
    - If scrape_job returns an ERROR message, stop immediately and output a JSON error:
      {"error": "<the error message from the tool>"}
 2. Spawn the "analyzer" subagent with the raw text to extract role, company, location, skills, topics.
-3. Spawn "tech_questions", "sysdesign_questions", and "behavioral_questions" subagents in parallel — pass them the raw text and the analyzer results.
+3. Spawn "tech_questions", "sysdesign_questions", "behavioral_questions", and "company_insights" subagents in parallel — pass them the raw text and the analyzer results.
 4. Combine all results into a single JSON response matching the required schema exactly.
 
 IMPORTANT:
 - Use ONLY the exact URL the user gives you. Never guess or construct a different URL.
 - Do NOT call Bash or any tool other than scrape_job and Task.
 - Output must be a valid JSON object with fields:
-  role, company, location, skills[], topics[], questions.technical[], questions.sysdesign[], questions.behavioral[]
+  role, company, location, skills[], topics[], questions.technical[], questions.sysdesign[], questions.behavioral[], company_overview{description, culture[], interview_focus[], research_tips[]}
 - Each question has: text, difficulty (Easy/Medium/Hard), topic, hint."""
 
 _LEAD_PROMPT_TEXT = """You are an interview prep kit generator. You only use the Task tool. Do NOT use Bash, file tools, scrape_job, or any other tools.
@@ -178,13 +195,13 @@ The full job description text has been provided directly — do NOT call scrape_
 
 Steps:
 1. Spawn the "analyzer" subagent with the provided job description text to extract role, company, location, skills, topics.
-2. Spawn "tech_questions", "sysdesign_questions", and "behavioral_questions" subagents in parallel — pass them the job description text and the analyzer results.
+2. Spawn "tech_questions", "sysdesign_questions", "behavioral_questions", and "company_insights" subagents in parallel — pass them the job description text and the analyzer results.
 3. Combine all results into a single JSON response matching the required schema exactly.
 
 IMPORTANT:
 - Do NOT call Bash or any tool other than Task.
 - Output must be a valid JSON object with fields:
-  role, company, location, skills[], topics[], questions.technical[], questions.sysdesign[], questions.behavioral[]
+  role, company, location, skills[], topics[], questions.technical[], questions.sysdesign[], questions.behavioral[], company_overview{description, culture[], interview_focus[], research_tips[]}
 - Each question has: text, difficulty (Easy/Medium/Hard), topic, hint."""
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -256,6 +273,8 @@ def _coerce_to_schema(data: dict) -> dict:
 
     questions = data.get("questions", {})
 
+    raw_co = data.get("company_overview") or {}
+
     return {
         "role":     str(data.get("role", "Unknown Role")),
         "company":  str(data.get("company", "Unknown Company")),
@@ -272,6 +291,12 @@ def _coerce_to_schema(data: dict) -> dict:
             "technical":  _coerce_questions(questions.get("technical", [])),
             "sysdesign":  _coerce_questions(questions.get("sysdesign", [])),
             "behavioral": _coerce_questions(questions.get("behavioral", [])),
+        },
+        "company_overview": {
+            "description":    str(raw_co.get("description", "")),
+            "culture":        [str(x) for x in raw_co.get("culture", []) if x],
+            "interview_focus":[str(x) for x in raw_co.get("interview_focus", []) if x],
+            "research_tips":  [str(x) for x in raw_co.get("research_tips", []) if x],
         },
     }
 
@@ -407,4 +432,6 @@ def _resolve_step(block: ToolUseBlock) -> tuple[str | None, str | None]:
             return _STEP_MAP["sysdesign_questions"]
         if "behavioral" in desc:
             return _STEP_MAP["behavioral_questions"]
+        if "company" in desc:
+            return _STEP_MAP["company_insights"]
     return None, None

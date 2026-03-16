@@ -6,9 +6,10 @@ const stepLabels: Record<string, string> = {
   technical: 'Generating Technical questions',
   sysdesign: 'Generating System Design questions',
   behavioral: 'Generating Behavioral questions',
+  company:   'Researching company insights',
 }
 
-const stepOrder = ['scraping', 'analyzing', 'technical', 'sysdesign', 'behavioral']
+const stepOrder = ['scraping', 'analyzing', 'technical', 'sysdesign', 'behavioral', 'company']
 
 interface Props {
   steps: ProgressStep[]

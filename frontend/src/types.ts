@@ -15,6 +15,13 @@ export interface Question {
   hint: string
 }
 
+export interface CompanyOverview {
+  description: string
+  culture: string[]
+  interview_focus: string[]
+  research_tips: string[]
+}
+
 export interface AnalysisResult {
   role: string
   company: string
@@ -26,6 +33,7 @@ export interface AnalysisResult {
     sysdesign: Question[]
     behavioral: Question[]
   }
+  company_overview?: CompanyOverview
 }
 
 export type JobStatus = 'not_applied' | 'applied' | 'interview' | 'offer' | 'rejected'

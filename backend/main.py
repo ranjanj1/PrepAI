@@ -144,9 +144,11 @@ async def analyze_ws(websocket: WebSocket, token: str = Query(...)):
             )
             session.add(analysis)
             await session.commit()
+            await session.refresh(analysis)
+            analysis_id = analysis.id
         logger.info("DB saved. Sending result...")
 
-        await websocket.send_json({"event": "result", "data": result, "analysis_id": analysis.id})
+        await websocket.send_json({"event": "result", "data": result, "analysis_id": analysis_id})
         logger.info("Result sent.")
 
     except WebSocketDisconnect:

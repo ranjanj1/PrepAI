@@ -2,14 +2,57 @@ import { useEffect, useState } from 'react'
 import { getAnswers, generateAnswer, getCustomQuestions, addCustomQuestion, deleteCustomQuestion } from '../api'
 import { QuestionCard } from '../components/QuestionCard'
 import { Sidebar } from '../components/Sidebar'
-import type { AnalysisResult, CustomQuestion } from '../types'
+import type { AnalysisResult, CompanyOverview, CustomQuestion } from '../types'
 
-type Tab = 'technical' | 'sysdesign' | 'behavioral'
+function CompanyOverviewPanel({ data }: { data?: CompanyOverview }) {
+  if (!data || !data.description) {
+    return (
+      <p className="font-mono text-[12px] text-muted">
+        Company overview not available. Re-run the analysis to generate it.
+      </p>
+    )
+  }
+
+  const sections: { label: string; items: string[] }[] = [
+    { label: 'Culture Signals', items: data.culture },
+    { label: 'What They Prioritize', items: data.interview_focus },
+    { label: 'Research Before the Interview', items: data.research_tips },
+  ]
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="bg-surface border-2 border-border rounded-2xl p-6"
+           style={{ boxShadow: '0 2px 16px rgba(26,22,18,0.06)' }}>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2">About</p>
+        <p className="text-[14px] text-text leading-relaxed">{data.description}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {sections.map(({ label, items }) => (
+          <div key={label} className="bg-surface border-2 border-border rounded-2xl p-5 flex flex-col gap-3"
+               style={{ boxShadow: '0 2px 16px rgba(26,22,18,0.06)' }}>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted">{label}</p>
+            <ul className="flex flex-col gap-2">
+              {items.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-[13px] text-text">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+type Tab = 'technical' | 'sysdesign' | 'behavioral' | 'company'
 
 const TAB_LABELS: Record<Tab, string> = {
   technical: 'Technical',
   sysdesign: 'System Design',
   behavioral: 'Behavioral',
+  company: 'Company',
 }
 
 interface Props {
@@ -54,7 +97,7 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
     setCustomQuestions((prev) => prev.filter((q) => q.id !== id))
   }
 
-  const questions = result.questions[tab]
+  const questions = tab !== 'company' ? result.questions[tab] : []
   const total =
     result.questions.technical.length +
     result.questions.sysdesign.length +
@@ -66,6 +109,7 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
     technical: result.questions.technical.length + customQuestions.filter(q => q.category === 'technical').length,
     sysdesign: result.questions.sysdesign.length + customQuestions.filter(q => q.category === 'sysdesign').length,
     behavioral: result.questions.behavioral.length + customQuestions.filter(q => q.category === 'behavioral').length,
+    company: 0,
   }
 
   return (
@@ -142,103 +186,111 @@ export function ResultsScreen({ result, url, analysisId, onNew, onHistory }: Pro
                 style={tab === t ? { boxShadow: '0 3px 12px rgba(255,92,53,0.3)' } : undefined}
               >
                 {TAB_LABELS[t]}
-                <span className={`font-mono text-[11px] rounded-full px-1.5 py-0 ${
-                  tab === t ? 'bg-white/25 text-white' : 'bg-surface2 text-muted'
-                }`}>
-                  {tabCounts[t]}
-                </span>
+                {t !== 'company' && (
+                  <span className={`font-mono text-[11px] rounded-full px-1.5 py-0 ${
+                    tab === t ? 'bg-white/25 text-white' : 'bg-surface2 text-muted'
+                  }`}>
+                    {tabCounts[t]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
-          {/* Questions */}
-          <div className="flex flex-col gap-3">
-            {questions.map((q, i) => (
-              <QuestionCard
-                key={q.text}
-                question={q}
-                index={i}
-                answer={answers[q.text]}
-                onGetAnswer={handleGetAnswer}
-              />
-            ))}
-            {customQuestions.filter((q) => q.category === tab).map((q, i) => (
-              <QuestionCard
-                key={q.id}
-                question={q}
-                index={questions.length + i}
-                answer={answers[q.text]}
-                onGetAnswer={handleGetAnswer}
-                isCustom
-                onDelete={() => handleDeleteQuestion(q.id)}
-              />
-            ))}
-            {questions.length === 0 && customQuestions.filter((q) => q.category === tab).length === 0 && (
-              <p className="font-mono text-[12px] text-muted">No questions in this category.</p>
-            )}
-          </div>
-
-          {/* Add question form */}
-          {showForm ? (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="mt-3 border-2 border-dashed border-accent/40 rounded-2xl p-5 flex flex-col gap-3 bg-surface animate-slide-in"
-            >
-              <textarea
-                autoFocus
-                placeholder="Your question..."
-                value={form.text}
-                onChange={(e) => setForm((p) => ({ ...p, text: e.target.value }))}
-                rows={3}
-                className="w-full bg-surface2 border border-border rounded-xl px-4 py-3 text-[13px] text-text placeholder-muted outline-none resize-none focus:border-accent focus:bg-white transition-all"
-              />
-              <div className="flex gap-3">
-                <select
-                  value={form.difficulty}
-                  onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value }))}
-                  className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text outline-none focus:border-accent transition-all"
-                >
-                  <option>Easy</option>
-                  <option>Medium</option>
-                  <option>Hard</option>
-                </select>
-                <input
-                  placeholder="Topic (optional)"
-                  value={form.topic}
-                  onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
-                  className="flex-1 bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
-                />
-              </div>
-              <input
-                placeholder="Hint (optional)"
-                value={form.hint}
-                onChange={(e) => setForm((p) => ({ ...p, hint: e.target.value }))}
-                className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
-              />
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 rounded-xl font-mono text-[12px] text-muted border border-border hover:bg-surface2 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddQuestion}
-                  className="px-5 py-2 rounded-xl bg-accent text-white font-mono text-[12px] font-semibold transition-all hover:-translate-y-0.5"
-                  style={{ boxShadow: '0 3px 10px rgba(255,92,53,0.3)' }}
-                >
-                  Add Question
-                </button>
-              </div>
-            </div>
+          {tab === 'company' ? (
+            <CompanyOverviewPanel data={result.company_overview} />
           ) : (
-            <button
-              onClick={() => setShowForm(true)}
-              className="mt-3 w-full flex items-center gap-3 border-2 border-dashed border-border rounded-2xl px-6 py-4 text-[14px] font-semibold text-muted hover:border-accent hover:text-accent hover:bg-accent/[0.03] transition-all"
-            >
-              <span className="w-7 h-7 bg-surface2 rounded-lg flex items-center justify-center text-lg leading-none border border-border">+</span>
-              Add a custom question
-            </button>
+            <>
+              {/* Questions */}
+              <div className="flex flex-col gap-3">
+                {questions.map((q, i) => (
+                  <QuestionCard
+                    key={q.text}
+                    question={q}
+                    index={i}
+                    answer={answers[q.text]}
+                    onGetAnswer={handleGetAnswer}
+                  />
+                ))}
+                {customQuestions.filter((q) => q.category === tab).map((q, i) => (
+                  <QuestionCard
+                    key={q.id}
+                    question={q}
+                    index={questions.length + i}
+                    answer={answers[q.text]}
+                    onGetAnswer={handleGetAnswer}
+                    isCustom
+                    onDelete={() => handleDeleteQuestion(q.id)}
+                  />
+                ))}
+                {questions.length === 0 && customQuestions.filter((q) => q.category === tab).length === 0 && (
+                  <p className="font-mono text-[12px] text-muted">No questions in this category.</p>
+                )}
+              </div>
+
+              {/* Add question form */}
+              {showForm ? (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-3 border-2 border-dashed border-accent/40 rounded-2xl p-5 flex flex-col gap-3 bg-surface animate-slide-in"
+                >
+                  <textarea
+                    autoFocus
+                    placeholder="Your question..."
+                    value={form.text}
+                    onChange={(e) => setForm((p) => ({ ...p, text: e.target.value }))}
+                    rows={3}
+                    className="w-full bg-surface2 border border-border rounded-xl px-4 py-3 text-[13px] text-text placeholder-muted outline-none resize-none focus:border-accent focus:bg-white transition-all"
+                  />
+                  <div className="flex gap-3">
+                    <select
+                      value={form.difficulty}
+                      onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value }))}
+                      className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text outline-none focus:border-accent transition-all"
+                    >
+                      <option>Easy</option>
+                      <option>Medium</option>
+                      <option>Hard</option>
+                    </select>
+                    <input
+                      placeholder="Topic (optional)"
+                      value={form.topic}
+                      onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
+                      className="flex-1 bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
+                    />
+                  </div>
+                  <input
+                    placeholder="Hint (optional)"
+                    value={form.hint}
+                    onChange={(e) => setForm((p) => ({ ...p, hint: e.target.value }))}
+                    className="bg-surface2 border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-text placeholder-muted outline-none focus:border-accent focus:bg-white transition-all"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setShowForm(false)}
+                      className="px-4 py-2 rounded-xl font-mono text-[12px] text-muted border border-border hover:bg-surface2 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddQuestion}
+                      className="px-5 py-2 rounded-xl bg-accent text-white font-mono text-[12px] font-semibold transition-all hover:-translate-y-0.5"
+                      style={{ boxShadow: '0 3px 10px rgba(255,92,53,0.3)' }}
+                    >
+                      Add Question
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="mt-3 w-full flex items-center gap-3 border-2 border-dashed border-border rounded-2xl px-6 py-4 text-[14px] font-semibold text-muted hover:border-accent hover:text-accent hover:bg-accent/[0.03] transition-all"
+                >
+                  <span className="w-7 h-7 bg-surface2 rounded-lg flex items-center justify-center text-lg leading-none border border-border">+</span>
+                  Add a custom question
+                </button>
+              )}
+            </>
           )}
 
           <p className="font-mono text-[11px] text-muted text-center mt-8 pt-5 border-t border-border">
