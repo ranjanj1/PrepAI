@@ -1,10 +1,14 @@
 # PrepAI — AI-Powered Interview Prep
 
+<p align="center">
+  <img src="image.png" alt="PrepAI" width="600" />
+</p>
+
 Paste a job URL or raw job description → get a personalized interview prep kit in seconds.
 
 ## Demo
 
-[![PrepAI Demo](https://img.youtube.com/vi/RRbZ9OFsyr0/maxresdefault.jpg)](https://www.youtube.com/watch?v=RRbZ9OFsyr0)
+[![PrepAI Demo](image.png)](https://www.youtube.com/watch?v=RRbZ9OFsyr0)
 
 PrepAI analyzes the role, extracts skills and topics, and generates tailored Technical, System Design, and Behavioral questions — specific to the exact role and company. Ask AI for ideal answers, add your own questions, and track your application status.
 
