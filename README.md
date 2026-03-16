@@ -20,7 +20,7 @@ PrepAI analyzes the role, extracts skills and topics, and generates tailored Tec
 - **Live Streaming** — watch the AI agent work step-by-step in real time via WebSocket
 - **Role Intelligence** — extracts job title, company, key skills (core vs. preferred), and topic weights
 - **Categorized Questions** — Technical, System Design, Behavioral, and Company Overview tabs with difficulty badges and expandable hints
-- **Company Overview** — auto-generated company description, culture signals, interview priorities, and research tips — runs in parallel with question generation at no extra cost
+- **Company Overview** — auto-generated company description, culture signals, interview priorities, and research tips — runs in parallel with question generation 
 - **AI Answers** — click "Get AI Answer" on any question to get a coached ideal answer, saved for future sessions
 - **Custom Questions** — add your own questions to any tab, with difficulty, topic, and hint
 - **Application Tracking** — track status per job (Not Applied → Applied → Interview → Offer → Rejected) with a filter bar in history
