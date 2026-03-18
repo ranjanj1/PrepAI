@@ -79,7 +79,7 @@ PrepAI/
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/your-username/PrepAI.git
+git clone https://github.com/ranjanj1/PrepAI.git
 cd PrepAI
 cp .env.example .env
 # Edit .env — set ANTHROPIC_API_KEY and JWT_SECRET
